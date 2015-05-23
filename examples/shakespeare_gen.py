@@ -20,35 +20,31 @@ from theano import config
 from keras.preprocessing.text import Tokenizer
 
 def charmap_array( text,  char_map ):
-    y = len(char_map)
-    data = np.zeros((len(text), y), dtype=config.floatX)
-    for i, char in enumerate(text):
-        index = char_map[char]
-        data[i][index] = 1.0
-    return data
+    return np.array( text, dtype=np.uint8 )
 
 def main():
-    corpus, chars = shakespeare.load_data()
-    corpus = corpus[:1000]
-    inputs = len(chars)
-    char_map = dict([(c, i) for i, c in enumerate(sorted(chars))])
+    corpus = shakespeare.load_data()
+    inputs = 256
     
     model = Sequential()
     
-    model.add(LSTM(inputs, inputs))
+    # Embedding doesn't seem to do what I want, I want something that 
+    # is going to expand an index (8-bit character value) into a 
+    # 256-bit vector
+    model.add(Embedding(256, 256)) 
+    model.add(LSTM(256, 128))
+    # Pooling layer needed?
     model.add(Dropout(.8))
-    model.add(Dense(256, inputs))
+    model.add(Dense(128, inputs))
 #    model.add(LSTM(128, 128))
 #    model.add(LSTM(128, inputs))
-    model.add(Activation('sigmoid'))
+#    model.add(Activation('softmax'))
     model.compile(loss='MSE', optimizer='SGD', class_mode="categorical")
     print('Compiled')
 
     divisor = len(corpus)//4*3
-    train_x, train_y = charmap_array(corpus[:divisor], char_map), charmap_array(corpus[1:divisor+1], char_map)
-    test_x, test_y = charmap_array(corpus[divisor:-1], char_map), charmap_array(corpus[divisor+1:], char_map)
-    
-
+    train_x, train_y = corpus[:divisor], corpus[1:divisor+1]
+    test_x, test_y = corpus[divisor:-1], corpus[divisor+1:]
 
     model.fit(
         train_x, # inputs

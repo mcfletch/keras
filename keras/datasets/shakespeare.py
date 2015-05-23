@@ -1,5 +1,7 @@
 """Download Project Gutenburg Shakespeare's Full-text"""
+import os
 from . import data_utils
+from numpy import memmap
 BASE_URL = 'http://cs.stanford.edu/people/karpathy/char-rnn/shakespeare_input.txt'
 TARGET_FILENAME = 'shakespeare.txt'
 
@@ -11,13 +13,15 @@ def load_data(path='shakespeare.txt', url=BASE_URL):
     returns downloaded multi-megabyte file...
     """
     filename = data_utils.get_file( path, BASE_URL )
-    content = open(filename).read()
-    # yes, there are faster ways, it's a small dataset...
-    for junk in [
-        '\xbb',
-         '\xbf',
-         '\xef'
-    ]:
-        content = content.replace(junk, '')
-    chars = set(content)
-    return content, chars
+    final = filename + '.clean'
+    if not os.path.exists(final):
+        content = open(filename, 'rb').read()
+        # yes, there are faster ways, it's a small dataset...
+        for junk in [
+            '\xbb',
+             '\xbf',
+             '\xef'
+        ]:
+            content = content.replace(junk, '')
+        open(final, 'wb').write(content)
+    return memmap(final, mode='r', dtype='uint8').reshape((-1, 1))
