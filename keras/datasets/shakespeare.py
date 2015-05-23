@@ -24,4 +24,4 @@ def load_data(path='shakespeare.txt', url=BASE_URL):
         ]:
             content = content.replace(junk, '')
         open(final, 'wb').write(content)
-    return memmap(final, mode='r', dtype='uint8').reshape((-1, 1))
+    return memmap(final, mode='r', dtype='uint8')

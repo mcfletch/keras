@@ -24,32 +24,41 @@ def charmap_array( text,  char_map ):
 
 def main():
     corpus = shakespeare.load_data()
+    # need a 256-character set with 1 extra 
+    corpus = corpus[:len(corpus)-(len(corpus)%256)+1]
+    xs = corpus[:-1]
+    ys = corpus[1:]
+    assert not len(xs)%256, len(xs)%256
+    assert not len(ys)%256
+
+    divisor = len(corpus)//256 //5 * 3 * 256
+    train_x, train_y = xs[:divisor].reshape((-1, 256)), ys[:divisor].reshape((-1, 256))
+    test_x, test_y = xs[divisor:].reshape((-1, 256)), ys[divisor:].reshape((-1, 256))
+
+
     inputs = 256
     
     model = Sequential()
     
     # Embedding doesn't seem to do what I want, I want something that 
     # is going to expand an index (8-bit character value) into a 
-    # 256-bit vector
+    # 256-bit vector, but that *doesn't* appear to be the effect here..
     model.add(Embedding(256, 256)) 
-    model.add(LSTM(256, 128))
+    model.add(LSTM(256, 256))
     # Pooling layer needed?
     model.add(Dropout(.8))
-    model.add(Dense(128, inputs))
+    model.add(Dense(256, inputs))
 #    model.add(LSTM(128, 128))
 #    model.add(LSTM(128, inputs))
 #    model.add(Activation('softmax'))
     model.compile(loss='MSE', optimizer='SGD', class_mode="categorical")
     print('Compiled')
 
-    divisor = len(corpus)//4*3
-    train_x, train_y = corpus[:divisor], corpus[1:divisor+1]
-    test_x, test_y = corpus[divisor:-1], corpus[divisor+1:]
 
     model.fit(
         train_x, # inputs
         train_y, # training outputs
-        batch_size=256, 
+        batch_size=8, 
         nb_epoch=400, 
         validation_split=0.1, show_accuracy=True
     )
